@@ -28,9 +28,9 @@ window.onload = function () {pageLoad();setSynopsis("mini_Data-Swagger-Schema-Va
  into account:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>data Person = Person { name :: String, age :: Maybe Int } deriving Generic
 </code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>instance ToJSON Person
 </code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>instance ToSchema Person
-</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>validateToJSON (Person &quot;John&quot; (Just 25))
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>validateToJSON (Person &quot;Nick&quot; (Just 24))
 </code></strong>[]
-<code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>validateToJSON (Person &quot;John&quot; Nothing)
+<code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>validateToJSON (Person &quot;Nick&quot; Nothing)
 </code></strong>[]
 </pre></div><h1 id="g:4">JSON validation</h1><div class="top"><p class="src"><a name="v:validateToJSON" class="def">validateToJSON</a> :: <span class="keyword">forall</span> a. (ToJSON a, <a href="Data-Swagger-Internal-Schema.html#t:ToSchema">ToSchema</a> a) =&gt; a -&gt; [<a href="Data-Swagger-Schema-Validation.html#t:ValidationError">ValidationError</a>] <a href="src/Data-Swagger-Internal-Schema-Validation.html#validateToJSON" class="link">Source</a></p><div class="doc"><p>Validate <code><code>ToJSON</code></code> instance matches <code><code><a href="Data-Swagger-Internal-Schema.html#t:ToSchema">ToSchema</a></code></code> for a given value.
  This can be used with QuickCheck to ensure those instances are coherent:</p><pre>validateToJSON (x :: Int) == []</pre><p><em>NOTE:</em> <code><code><a href="Data-Swagger-Schema-Validation.html#v:validateToJSON">validateToJSON</a></code></code> does not perform string pattern validation.

@@ -74,6 +74,7 @@ instance (Data.Swagger.Internal.Utils.GMonoid f, Data.Swagger.Internal.Utils.GMo
 instance Data.Swagger.Internal.Utils.SwaggerMonoid a => Data.Swagger.Internal.Utils.GMonoid (GHC.Generics.K1 i a)
 instance Data.Swagger.Internal.Utils.GMonoid f => Data.Swagger.Internal.Utils.GMonoid (GHC.Generics.M1 i t f)
 instance Data.Swagger.Internal.Utils.SwaggerMonoid [a]
+instance GHC.Classes.Ord a => Data.Swagger.Internal.Utils.SwaggerMonoid (Data.Set.Base.Set a)
 instance GHC.Classes.Ord k => Data.Swagger.Internal.Utils.SwaggerMonoid (Data.Map.Base.Map k v)
 instance (GHC.Classes.Eq k, Data.Hashable.Class.Hashable k) => Data.Swagger.Internal.Utils.SwaggerMonoid (Data.HashMap.Base.HashMap k v)
 instance Data.Swagger.Internal.Utils.SwaggerMonoid Data.Text.Internal.Text
@@ -181,7 +182,7 @@ type Definitions = HashMap Text
 
 -- | This is the root document object for the API specification.
 data Swagger
-Swagger :: Info -> Maybe Host -> Maybe FilePath -> Maybe [Scheme] -> MimeList -> MimeList -> HashMap FilePath PathItem -> Definitions Schema -> Definitions Param -> Definitions Response -> Definitions SecurityScheme -> [SecurityRequirement] -> [Tag] -> Maybe ExternalDocs -> Swagger
+Swagger :: Info -> Maybe Host -> Maybe FilePath -> Maybe [Scheme] -> MimeList -> MimeList -> HashMap FilePath PathItem -> Definitions Schema -> Definitions Param -> Definitions Response -> Definitions SecurityScheme -> [SecurityRequirement] -> Set Tag -> Maybe ExternalDocs -> Swagger
 
 -- | Provides metadata about the API. The metadata can be used by the
 --   clients if needed.
@@ -240,7 +241,7 @@ Swagger :: Info -> Maybe Host -> Maybe FilePath -> Maybe [Scheme] -> MimeList ->
 --   tools. Not all tags that are used by the Operation Object must be
 --   declared. The tags that are not declared may be organized randomly or
 --   based on the tools' logic. Each tag name in the list MUST be unique.
-[_swaggerTags] :: Swagger -> [Tag]
+[_swaggerTags] :: Swagger -> Set Tag
 
 -- | Additional external documentation.
 [_swaggerExternalDocs] :: Swagger -> Maybe ExternalDocs
@@ -350,11 +351,11 @@ PathItem :: Maybe Operation -> Maybe Operation -> Maybe Operation -> Maybe Opera
 
 -- | Describes a single API operation on a path.
 data Operation
-Operation :: [TagName] -> Maybe Text -> Maybe Text -> Maybe ExternalDocs -> Maybe Text -> Maybe MimeList -> Maybe MimeList -> [Referenced Param] -> Responses -> Maybe [Scheme] -> Maybe Bool -> [SecurityRequirement] -> Operation
+Operation :: Set TagName -> Maybe Text -> Maybe Text -> Maybe ExternalDocs -> Maybe Text -> Maybe MimeList -> Maybe MimeList -> [Referenced Param] -> Responses -> Maybe [Scheme] -> Maybe Bool -> [SecurityRequirement] -> Operation
 
 -- | A list of tags for API documentation control. Tags can be used for
 --   logical grouping of operations by resources or any other qualifier.
-[_operationTags] :: Operation -> [TagName]
+[_operationTags] :: Operation -> Set TagName
 
 -- | A short summary of what the operation does. For maximum readability in
 --   the swagger-ui, this field SHOULD be less than 120 characters.
@@ -999,15 +1000,18 @@ instance GHC.Classes.Eq Data.Swagger.Internal.Schema
 instance Data.Data.Data Data.Swagger.Internal.Tag
 instance GHC.Generics.Generic Data.Swagger.Internal.Tag
 instance GHC.Show.Show Data.Swagger.Internal.Tag
+instance GHC.Classes.Ord Data.Swagger.Internal.Tag
 instance GHC.Classes.Eq Data.Swagger.Internal.Tag
 instance Data.Data.Data Data.Swagger.Internal.ExternalDocs
 instance GHC.Generics.Generic Data.Swagger.Internal.ExternalDocs
 instance GHC.Show.Show Data.Swagger.Internal.ExternalDocs
+instance GHC.Classes.Ord Data.Swagger.Internal.ExternalDocs
 instance GHC.Classes.Eq Data.Swagger.Internal.ExternalDocs
 instance Data.Data.Data Data.Swagger.Internal.URL
 instance Data.Aeson.Types.Class.FromJSON Data.Swagger.Internal.URL
 instance Data.Aeson.Types.Class.ToJSON Data.Swagger.Internal.URL
 instance GHC.Show.Show Data.Swagger.Internal.URL
+instance GHC.Classes.Ord Data.Swagger.Internal.URL
 instance GHC.Classes.Eq Data.Swagger.Internal.URL
 instance Data.Data.Data a => Data.Data.Data (Data.Swagger.Internal.Referenced a)
 instance GHC.Base.Functor Data.Swagger.Internal.Referenced
@@ -1342,8 +1346,8 @@ _ParamBody :: Prism' ParamAnySchema (Referenced Schema)
 _SecuritySchemeOAuth2 :: Prism' SecuritySchemeType OAuth2Params
 _SecuritySchemeApiKey :: Prism' SecuritySchemeType ApiKeyParams
 _SecuritySchemeBasic :: Prism' SecuritySchemeType ()
-_Inline :: Prism (Referenced a_a6mDQ) (Referenced a_aFk3) a_a6mDQ a_aFk3
-_Ref :: Prism' (Referenced a_aFk3) Reference
+_Inline :: Prism (Referenced a_a6s3C) (Referenced a_aFn8) a_a6s3C a_aFn8
+_Ref :: Prism' (Referenced a_aFn8) Reference
 _SwaggerItemsArray :: (t ~ Schema) => Review (SwaggerItems t) [Referenced Schema]
 _SwaggerItemsObject :: (t ~ Schema) => Review (SwaggerItems t) (Referenced Schema)
 _SwaggerItemsPrimitive :: (Profunctor p, Bifunctor p, Functor f) => Optic' p f (SwaggerItems t) (Maybe (CollectionFormat t), ParamSchema t)
@@ -1440,7 +1444,7 @@ instance Data.Swagger.Lens.HasResponses Data.Swagger.Internal.Operation Data.Swa
 instance Data.Swagger.Lens.HasSchemes Data.Swagger.Internal.Operation (GHC.Base.Maybe [Data.Swagger.Internal.Scheme])
 instance Data.Swagger.Lens.HasSecurity Data.Swagger.Internal.Operation [Data.Swagger.Internal.SecurityRequirement]
 instance Data.Swagger.Lens.HasSummary Data.Swagger.Internal.Operation (GHC.Base.Maybe Data.Text.Internal.Text)
-instance Data.Swagger.Lens.HasTags Data.Swagger.Internal.Operation [Data.Swagger.Internal.TagName]
+instance Data.Swagger.Lens.HasTags Data.Swagger.Internal.Operation (Data.Set.Base.Set Data.Swagger.Internal.TagName)
 instance Data.Swagger.Lens.HasDescription Data.Swagger.Internal.Tag (GHC.Base.Maybe Data.Text.Internal.Text)
 instance Data.Swagger.Lens.HasExternalDocs Data.Swagger.Internal.Tag (GHC.Base.Maybe Data.Swagger.Internal.ExternalDocs)
 instance Data.Swagger.Lens.HasName Data.Swagger.Internal.Tag Data.Swagger.Internal.TagName
@@ -1478,9 +1482,19 @@ instance Data.Swagger.Lens.HasResponses Data.Swagger.Internal.Swagger (Data.Swag
 instance Data.Swagger.Lens.HasSchemes Data.Swagger.Internal.Swagger (GHC.Base.Maybe [Data.Swagger.Internal.Scheme])
 instance Data.Swagger.Lens.HasSecurity Data.Swagger.Internal.Swagger [Data.Swagger.Internal.SecurityRequirement]
 instance Data.Swagger.Lens.HasSecurityDefinitions Data.Swagger.Internal.Swagger (Data.Swagger.Internal.Definitions Data.Swagger.Internal.SecurityScheme)
-instance Data.Swagger.Lens.HasTags Data.Swagger.Internal.Swagger [Data.Swagger.Internal.Tag]
+instance Data.Swagger.Lens.HasTags Data.Swagger.Internal.Swagger (Data.Set.Base.Set Data.Swagger.Internal.Tag)
 
 module Data.Swagger.Internal.ParamSchema
+
+-- | Default schema for binary data (any sequence of octets).
+binaryParamSchema :: ParamSchema t
+
+-- | Default schema for binary data (base64 encoded).
+byteParamSchema :: ParamSchema t
+
+-- | Default schema for password string. <tt>"password"</tt> format is used
+--   to hint UIs the input needs to be obscured.
+passwordParamSchema :: ParamSchema t
 
 -- | Convert a type into a plain <tt><a>ParamSchema</a></tt>.
 --   
@@ -1609,6 +1623,10 @@ instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Inter
 instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Monoid.Last a)
 instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Monoid.Dual a)
 instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema [a]
+instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Vector.Vector a)
+instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Vector.Primitive.Vector a)
+instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Vector.Storable.Vector a)
+instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Vector.Unboxed.Base.Vector a)
 instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.Set.Base.Set a)
 instance Data.Swagger.Internal.ParamSchema.ToParamSchema a => Data.Swagger.Internal.ParamSchema.ToParamSchema (Data.HashSet.HashSet a)
 instance Data.Swagger.Internal.ParamSchema.ToParamSchema ()
@@ -1690,6 +1708,16 @@ genericToParamSchema :: (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> 
 --   "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
 --   </pre>
 toParamSchemaBoundedIntegral :: (Bounded a, Integral a) => proxy a -> ParamSchema t
+
+-- | Default schema for password string. <tt>"password"</tt> format is used
+--   to hint UIs the input needs to be obscured.
+passwordParamSchema :: ParamSchema t
+
+-- | Default schema for binary data (any sequence of octets).
+binaryParamSchema :: ParamSchema t
+
+-- | Default schema for binary data (base64 encoded).
+byteParamSchema :: ParamSchema t
 
 -- | Options that specify how to encode your type to Swagger schema.
 data SchemaOptions
@@ -1898,6 +1926,74 @@ toInlinedSchema :: ToSchema a => proxy a -> Schema
 -- | Inline all <i>non-recursive</i> schemas for which the definition can
 --   be found in <tt><a>Definitions</a></tt>.
 inlineNonRecursiveSchemas :: Data s => (Definitions Schema) -> s -> s
+
+-- | Default schema for binary data (any sequence of octets).
+binarySchema :: Schema
+
+-- | Default schema for binary data (base64 encoded).
+byteSchema :: Schema
+
+-- | Default schema for password string. <tt>"password"</tt> format is used
+--   to hint UIs the input needs to be obscured.
+passwordSchema :: Schema
+
+-- | Make an unrestrictive sketch of a <tt><a>Schema</a></tt> based on a
+--   <tt><a>ToJSON</a></tt> instance. Produced schema can be used for
+--   further refinement.
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchSchema "hello"
+--   "{\"example\":\"hello\",\"type\":\"string\"}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchSchema (1, 2, 3)
+--   "{\"example\":[1,2,3],\"items\":{\"type\":\"number\"},\"type\":\"array\"}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchSchema ("Jack", 25)
+--   "{\"example\":[\"Jack\",25],\"items\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"type\":\"array\"}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; data Person = Person { name :: String, age :: Int } deriving (Generic)
+--   
+--   &gt;&gt;&gt; instance ToJSON Person
+--   
+--   &gt;&gt;&gt; encode $ sketchSchema (Person "Jack" 25)
+--   "{\"example\":{\"age\":25,\"name\":\"Jack\"},\"required\":[\"age\",\"name\"],\"type\":\"object\",\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}}}"
+--   </pre>
+sketchSchema :: ToJSON a => a -> Schema
+
+-- | Make a restrictive sketch of a <tt><a>Schema</a></tt> based on a
+--   <tt><a>ToJSON</a></tt> instance. Produced schema uses as much
+--   constraints as possible.
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchStrictSchema "hello"
+--   "{\"maxLength\":5,\"pattern\":\"hello\",\"minLength\":5,\"type\":\"string\",\"enum\":[\"hello\"]}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchStrictSchema (1, 2, 3)
+--   "{\"minItems\":3,\"uniqueItems\":true,\"items\":[{\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\",\"enum\":[1]},{\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\",\"enum\":[2]},{\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\",\"enum\":[3]}],\"maxItems\":3,\"type\":\"array\",\"enum\":[[1,2,3]]}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchStrictSchema ("Jack", 25)
+--   "{\"minItems\":2,\"uniqueItems\":true,\"items\":[{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]},{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]}],\"maxItems\":2,\"type\":\"array\",\"enum\":[[\"Jack\",25]]}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; data Person = Person { name :: String, age :: Int } deriving (Generic)
+--   
+--   &gt;&gt;&gt; instance ToJSON Person
+--   
+--   &gt;&gt;&gt; encode $ sketchStrictSchema (Person "Jack" 25)
+--   "{\"minProperties\":2,\"required\":[\"age\",\"name\"],\"maxProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}}}"
+--   </pre>
+sketchStrictSchema :: ToJSON a => a -> Schema
 class GToSchema (f :: * -> *)
 gdeclareNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 timeSchema :: Text -> Schema
@@ -2013,6 +2109,10 @@ instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema
 instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.HashMap.Base.HashMap GHC.Base.String a)
 instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.HashMap.Base.HashMap Data.Text.Internal.Text a)
 instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.HashMap.Base.HashMap Data.Text.Internal.Lazy.Text a)
+instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.Vector.Vector a)
+instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.Vector.Unboxed.Base.Vector a)
+instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.Vector.Storable.Vector a)
+instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.Vector.Primitive.Vector a)
 instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.Set.Base.Set a)
 instance Data.Swagger.Internal.Schema.ToSchema a => Data.Swagger.Internal.Schema.ToSchema (Data.HashSet.HashSet a)
 instance Data.Swagger.Internal.Schema.ToSchema Data.Monoid.All
@@ -2186,6 +2286,74 @@ paramSchemaToNamedSchema :: (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatyp
 -- | Lift a plain <tt><a>ParamSchema</a></tt> into a model
 --   <tt><a>Schema</a></tt>.
 paramSchemaToSchema :: ToParamSchema a => proxy a -> Schema
+
+-- | Default schema for password string. <tt>"password"</tt> format is used
+--   to hint UIs the input needs to be obscured.
+passwordSchema :: Schema
+
+-- | Default schema for binary data (any sequence of octets).
+binarySchema :: Schema
+
+-- | Default schema for binary data (base64 encoded).
+byteSchema :: Schema
+
+-- | Make an unrestrictive sketch of a <tt><a>Schema</a></tt> based on a
+--   <tt><a>ToJSON</a></tt> instance. Produced schema can be used for
+--   further refinement.
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchSchema "hello"
+--   "{\"example\":\"hello\",\"type\":\"string\"}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchSchema (1, 2, 3)
+--   "{\"example\":[1,2,3],\"items\":{\"type\":\"number\"},\"type\":\"array\"}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchSchema ("Jack", 25)
+--   "{\"example\":[\"Jack\",25],\"items\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"type\":\"array\"}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; data Person = Person { name :: String, age :: Int } deriving (Generic)
+--   
+--   &gt;&gt;&gt; instance ToJSON Person
+--   
+--   &gt;&gt;&gt; encode $ sketchSchema (Person "Jack" 25)
+--   "{\"example\":{\"age\":25,\"name\":\"Jack\"},\"required\":[\"age\",\"name\"],\"type\":\"object\",\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}}}"
+--   </pre>
+sketchSchema :: ToJSON a => a -> Schema
+
+-- | Make a restrictive sketch of a <tt><a>Schema</a></tt> based on a
+--   <tt><a>ToJSON</a></tt> instance. Produced schema uses as much
+--   constraints as possible.
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchStrictSchema "hello"
+--   "{\"maxLength\":5,\"pattern\":\"hello\",\"minLength\":5,\"type\":\"string\",\"enum\":[\"hello\"]}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchStrictSchema (1, 2, 3)
+--   "{\"minItems\":3,\"uniqueItems\":true,\"items\":[{\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\",\"enum\":[1]},{\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\",\"enum\":[2]},{\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\",\"enum\":[3]}],\"maxItems\":3,\"type\":\"array\",\"enum\":[[1,2,3]]}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; encode $ sketchStrictSchema ("Jack", 25)
+--   "{\"minItems\":2,\"uniqueItems\":true,\"items\":[{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]},{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]}],\"maxItems\":2,\"type\":\"array\",\"enum\":[[\"Jack\",25]]}"
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; data Person = Person { name :: String, age :: Int } deriving (Generic)
+--   
+--   &gt;&gt;&gt; instance ToJSON Person
+--   
+--   &gt;&gt;&gt; encode $ sketchStrictSchema (Person "Jack" 25)
+--   "{\"minProperties\":2,\"required\":[\"age\",\"name\"],\"maxProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}}}"
+--   </pre>
+sketchStrictSchema :: ToJSON a => a -> Schema
 
 -- | Inline all <i>non-recursive</i> schemas for which the definition can
 --   be found in <tt><a>Definitions</a></tt>.
@@ -2516,7 +2684,7 @@ module Data.Swagger
 
 -- | This is the root document object for the API specification.
 data Swagger
-Swagger :: Info -> Maybe Host -> Maybe FilePath -> Maybe [Scheme] -> MimeList -> MimeList -> HashMap FilePath PathItem -> Definitions Schema -> Definitions Param -> Definitions Response -> Definitions SecurityScheme -> [SecurityRequirement] -> [Tag] -> Maybe ExternalDocs -> Swagger
+Swagger :: Info -> Maybe Host -> Maybe FilePath -> Maybe [Scheme] -> MimeList -> MimeList -> HashMap FilePath PathItem -> Definitions Schema -> Definitions Param -> Definitions Response -> Definitions SecurityScheme -> [SecurityRequirement] -> Set Tag -> Maybe ExternalDocs -> Swagger
 
 -- | Provides metadata about the API. The metadata can be used by the
 --   clients if needed.
@@ -2575,7 +2743,7 @@ Swagger :: Info -> Maybe Host -> Maybe FilePath -> Maybe [Scheme] -> MimeList ->
 --   tools. Not all tags that are used by the Operation Object must be
 --   declared. The tags that are not declared may be organized randomly or
 --   based on the tools' logic. Each tag name in the list MUST be unique.
-[_swaggerTags] :: Swagger -> [Tag]
+[_swaggerTags] :: Swagger -> Set Tag
 
 -- | Additional external documentation.
 [_swaggerExternalDocs] :: Swagger -> Maybe ExternalDocs
@@ -2683,11 +2851,11 @@ PathItem :: Maybe Operation -> Maybe Operation -> Maybe Operation -> Maybe Opera
 
 -- | Describes a single API operation on a path.
 data Operation
-Operation :: [TagName] -> Maybe Text -> Maybe Text -> Maybe ExternalDocs -> Maybe Text -> Maybe MimeList -> Maybe MimeList -> [Referenced Param] -> Responses -> Maybe [Scheme] -> Maybe Bool -> [SecurityRequirement] -> Operation
+Operation :: Set TagName -> Maybe Text -> Maybe Text -> Maybe ExternalDocs -> Maybe Text -> Maybe MimeList -> Maybe MimeList -> [Referenced Param] -> Responses -> Maybe [Scheme] -> Maybe Bool -> [SecurityRequirement] -> Operation
 
 -- | A list of tags for API documentation control. Tags can be used for
 --   logical grouping of operations by resources or any other qualifier.
-[_operationTags] :: Operation -> [TagName]
+[_operationTags] :: Operation -> Set TagName
 
 -- | A short summary of what the operation does. For maximum readability in
 --   the swagger-ui, this field SHOULD be less than 120 characters.
